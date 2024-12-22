@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Function to transform filepath
+transform_filepath() {
+    local filepath=$1
+    # Replace solendgo with gosolend
+    filepath=${filepath//solendgo/gosolend}
+    # Replace cmd/cmd/ with cmd/commands/
+    filepath=${filepath//cmd\/cmd\//cmd\/commands\/}
+    echo "$filepath"
+}
+
+# Check if input file is provided
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <input_file>"
+    exit 1
+fi
+
+input_file="$1"
+current_file=""
+
+# Read the input file line by line
+while IFS= read -r line; do
+    # Check if line starts with "// File: "
+    if [[ $line =~ ^//\ File:\ (.+)$ ]]; then
+        # Extract and transform the file path
+        file_path=$(transform_filepath "${BASH_REMATCH[1]}")
+        # Create the directory structure
+        mkdir -p "$(dirname "$file_path")"
+        # Set the current file we're writing to
+        current_file="$file_path"
+        echo "Creating file: $current_file"
+    elif [ ! -z "$current_file" ]; then
+        # Skip writing the original file path comment
+        if [[ ! $line =~ ^//\ File:\ (.+)$ ]]; then
+            # Write the line to the current file
+            echo "$line" >> "$current_file"
+        fi
+    fi
+done < "$input_file"
+
+echo "Done! Files have been split successfully."
